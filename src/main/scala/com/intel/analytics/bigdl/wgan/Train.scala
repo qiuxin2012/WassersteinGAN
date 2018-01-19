@@ -14,7 +14,7 @@ import org.opencv.imgproc.Imgproc
 object Train {
 
   def main(args: Array[String]): Unit = {
-    val nCpu = 4
+    val nCpu = args(0).toInt
     val imageSize = 64
     val nc = 3
     val nz = 100
@@ -22,13 +22,14 @@ object Train {
     val ndf = 64
     val batchSize = 64
     val numEpoch = 2000
-    val dataroot = "cifar-10/train"
+    val dataroot = args(1) // "/home/xin/datasets/cifar-10/train"
+//    val dataroot = "cifar10"
 
     Engine.init(1, nCpu, false)
     MKL.setNumThreads(nCpu)
     val localImageFrame = ImageFrame.read(dataroot)
 
-    val imgPreprocess = Resize(imageSize, imageSize, Imgproc.INTER_CUBIC) ->
+    val imgPreprocess = Resize(imageSize, imageSize, Imgproc.INTER_CUBIC, false) ->
       ChannelNormalize(127.5f, 127.5f, 127.5f, 127.5f, 127.5f, 127.5f) ->
       MatToTensor() -> ImageFrameToSample()
 
@@ -38,9 +39,9 @@ object Train {
 
     val dataset = DataSet.array(cifar10) -> toBatch
 
-    val netG = models.dcganG(imageSize, nz, nc, ngf)
+//    val netG = models.dcganG(imageSize, nz, nc, ngf)
     val netD = models.dcganD(imageSize, nz, nc, ndf)
-//    val netG = Mlp.modelG(imageSize, nz, nc, ngf)
+    val netG = Mlp.modelG(imageSize, nz, nc, ngf)
 //    val netD = Mlp.modelD(imageSize, nz, nc, ndf)
 
     val (parametersG, gradParametersG) = netG.getParameters()
@@ -65,10 +66,10 @@ object Train {
     var epoch = 0
     val numSamples = dataset.toLocal().data(train = false).map(_.size()).reduce(_ + _)
     val numBatches = Math.ceil(numSamples.toFloat / batchSize)
-    dataset.shuffle()
+//    dataset.shuffle()
     var data = dataset.toLocal().data(true)
-    val real = data.next().getInput().toTensor
-    Utils.save(real, "/tmp/mlp/real.jpg")
+    val real = data.next().getInput().toTensor // .resize(3, 64, 64)
+    Utils.save(real, "real.png")
     while (epoch < numEpoch) {
       val dIters = if (gIters < 25 || gIters % 500 == 0) {
         100
@@ -127,7 +128,7 @@ object Train {
       optimizerG.optimize(_ => (errG, gradParametersG), parametersG)
       gIters += 1
 
-      if (iteration <= numBatches * (epoch + 1)) {
+      if (iteration > numBatches * (epoch + 1)) {
         dataset.shuffle()
         data = dataset.toLocal().data(true)
         epoch += 1
@@ -137,6 +138,8 @@ object Train {
         netG.evaluate()
         val gen = netG.forward(fixedNoise).toTensor
         Utils.save(gen, s"/tmp/mlp/fake_${gIters}.jpg")
+        netD.saveModule(s"/tmp/mlp/netD_${gIters}.obj")
+        netG.saveModule(s"/tmp/mlp/netG_${gIters}.obj")
 
       }
     }

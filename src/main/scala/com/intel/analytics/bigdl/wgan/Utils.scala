@@ -17,6 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 object Utils {
   def save(tensor: Tensor[Float], fileName: String) = {
 
+//    val image = tensor.mul(127.5f).add(127.5f)
     val image = Tensor[Float](3, 530, 530).fill(0)
     (0 to 7).foreach{ i =>
       (0 to 7).foreach{ j =>
