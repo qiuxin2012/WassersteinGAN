@@ -64,13 +64,14 @@ object Utils {
       imageSize: Int = 64,
       nc: Int = 3,
       nz: Int = 100,
-      ngf: Int = 512,
+      ngf: Int = 64,
       ndf: Int = 64,
       batchSize: Int = 64,
       maxEpoch: Int = 2000,
       learningRateG: Double = 0.00005,
       learningRateD: Double = 0.00005,
-      folder: String = "/home/xin/datasets/cifar-10/train"
+      folder: String = "/home/xin/datasets/cifar-10/train",
+      experiment: String = "/tmp/dcgan"
                         )
 
   val trainParser = new OptionParser[TrainParams]("BigDL WGAN Example") {
@@ -78,6 +79,9 @@ object Utils {
       .text("data path")
       .action((x, c) => c.copy(folder = x))
       .required()
+    opt[String]("experiment")
+      .text("Where to store samples and models")
+      .action((x, c) => c.copy(experiment = x))
     opt[Int]('e', "maxEpoch")
       .text("epoch numbers")
       .action((x, c) => c.copy(maxEpoch = x))
@@ -90,24 +94,21 @@ object Utils {
     opt[Int]('b', "batchSize")
       .text("batch size")
       .action((x, c) => c.copy(batchSize = x))
-    opt[Int]('b', "batchSize")
-      .text("batch size")
-      .action((x, c) => c.copy(batchSize = x))
     opt[Int]("nCPU")
       .text("number of CPU to run")
       .action((x, c) => c.copy(nCpu = x))
     opt[Int]("nc")
       .text("input image channels")
-      .action((x, c) => c.copy(nCpu = x))
+      .action((x, c) => c.copy(nc = x))
     opt[Int]("nz")
       .text("size of the latent z vector")
-      .action((x, c) => c.copy(nCpu = x))
+      .action((x, c) => c.copy(nz = x))
     opt[Int]("ngf")
-      .text("ngf")
-      .action((x, c) => c.copy(nCpu = x))
+      .text("discrim filters in first conv layer")
+      .action((x, c) => c.copy(ngf = x))
     opt[Int]("ndf")
-      .text("ndf")
-      .action((x, c) => c.copy(nCpu = x))
+      .text("gen filters in first conv layer")
+      .action((x, c) => c.copy(ndf = x))
 
   }
 
