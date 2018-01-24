@@ -18,7 +18,7 @@ object Train {
     val imageSize = 64
     val nc = 3
     val nz = 100
-    val ngf = 512
+    val ngf = 64
     val ndf = 64
     val batchSize = 64
     val numEpoch = 2000
@@ -39,15 +39,15 @@ object Train {
 
     val dataset = DataSet.array(cifar10) -> toBatch
 
-//    val netG = models.dcganG(imageSize, nz, nc, ngf)
+    val netG = models.dcganG(imageSize, nz, nc, ngf)
     val netD = models.dcganD(imageSize, nz, nc, ndf)
-    val netG = Mlp.modelG(imageSize, nz, nc, ngf)
+//    val netG = Mlp.modelG(imageSize, nz, nc, ngf)
 //    val netD = Mlp.modelD(imageSize, nz, nc, ndf)
+    println(netG)
+    println(netD)
 
     val (parametersG, gradParametersG) = netG.getParameters()
     val (parametersD, gradParametersD) = netD.getParameters()
-
-//    val criterion = Mean(1)
 
     val fixedNoise = Tensor(batchSize, nz, 1, 1).apply1(_ => RandomGenerator.RNG.normal(0, 1).toFloat)
     netG.forward(fixedNoise)
@@ -66,10 +66,12 @@ object Train {
     var epoch = 0
     val numSamples = dataset.toLocal().data(train = false).map(_.size()).reduce(_ + _)
     val numBatches = Math.ceil(numSamples.toFloat / batchSize)
-//    dataset.shuffle()
+    dataset.shuffle()
     var data = dataset.toLocal().data(true)
     val real = data.next().getInput().toTensor // .resize(3, 64, 64)
     Utils.save(real, "real.png")
+    netD.training()
+    netG.training()
     while (epoch < numEpoch) {
       val dIters = if (gIters < 25 || gIters % 500 == 0) {
         100
@@ -81,8 +83,6 @@ object Train {
       while (j < dIters && iteration <= numBatches * (epoch + 1)) {
         val input = data.next()
         netD.zeroGradParameters()
-        netD.training()
-        netG.evaluate()
         // clamp parameters to a cube
         parametersD.apply1{v =>
           if (v < -0.01) {
@@ -118,8 +118,6 @@ object Train {
       // update Generator network.
       noise.apply1(_ => RandomGenerator.RNG.normal(0, 1).toFloat)
       netG.zeroGradParameters()
-      netG.training()
-      netD.evaluate()
       val fake = netG.forward(noise)
       val errG = netD.forward(fake).toTensor.value()
       println(s"[$epoch/$numEpoch] [$gIters] errG is $errG")
@@ -134,12 +132,13 @@ object Train {
         epoch += 1
       }
 
-      if (gIters % 100 == 0) {
+      if (gIters % 10 == 0) {
         netG.evaluate()
         val gen = netG.forward(fixedNoise).toTensor
         Utils.save(gen, s"/tmp/mlp/fake_${gIters}.jpg")
-        netD.saveModule(s"/tmp/mlp/netD_${gIters}.obj")
-        netG.saveModule(s"/tmp/mlp/netG_${gIters}.obj")
+        netD.saveModule(s"/tmp/mlp/netD_${gIters}.obj", overWrite = true)
+        netG.saveModule(s"/tmp/mlp/netG_${gIters}.obj", overWrite = true)
+        netG.training()
 
       }
     }

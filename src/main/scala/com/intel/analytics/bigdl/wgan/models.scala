@@ -9,7 +9,7 @@ import com.intel.analytics.bigdl.transform.vision.image.augmentation._
 object models {
   // dcgan Discriminator
   def dcganD(isize: Int, nz: Int, nc: Int, ndf: Int, nExtraLayers: Int = 0): Module[Float] = {
-    val netD = Sequential()
+    val netD = Sequential().setName("netD")
 
     // input is nc x isize x isize
     netD.add(SpatialConvolution(nc, ndf, 4, 4, 2, 2, 1, 1, withBias = false)
@@ -68,7 +68,7 @@ object models {
       tisize *= 2
     }
 
-    val netG = Sequential()
+    val netG = Sequential().setName("netG")
     // input is Z, going into a convolution
     netG.add(SpatialFullConvolution(nz, cngf, 4, 4, 1, 1, 0, 0, noBias = true)
       .setInitMethod(RandomNormal(0, 0.02))
